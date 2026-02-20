@@ -34,6 +34,18 @@ def parse_query_string(query_string: str) -> dict[str, str | None | list[str | N
     return query_params
 
 
+def split_route_path(path: str) -> tuple[str | None, list[str]]:
+    cleaned_path = path.strip('/')
+    if len(cleaned_path) == 0:
+        return None, []
+
+    parts = [urllib.parse.unquote(part) for part in cleaned_path.split('/') if len(part) > 0]
+    if len(parts) == 0:
+        return None, []
+
+    return parts[0], parts[1:]
+
+
 class RequestHandler(BaseHTTPRequestHandler):
     def safe_write(self, payload: bytes) -> None:
         """Write response body and ignore client-side disconnects."""
@@ -60,11 +72,14 @@ class RequestHandler(BaseHTTPRequestHandler):
             return
 
         query_params = parse_query_string(query_string)
+        service, sections = split_route_path(path)
 
         self_path_display = html.escape(self.path)
         path_display = html.escape(path)
         query_string_display = html.escape(query_string if query_string else 'None')
         query_params_display = html.escape(str(query_params))
+        service_display = html.escape(service if service is not None else 'None')
+        sections_display = html.escape(str(sections))
 
         self.send_response(200, 'OK')
         self.send_header('Content-Type', 'text/html; charset=utf-8')
@@ -88,20 +103,23 @@ class RequestHandler(BaseHTTPRequestHandler):
         <h1>Аналізатор запитів</h1>
 
         <section class="card">
-            <!-- task 1 -->
-            <p class="task-label">task 1</p>
-            <h2>Тестові посилання (Д.З.):</h2>
+            <p class="task-label">Маршрути</p>
+            <h2>Тестові посилання для розділення маршрутів:</h2>
             <ul>
-                <li><a href="/user/auth">Без параметрів (/user/auth)</a></li>
-                <li><a href="/user/auth?">Без параметрів з "?" (/user/auth?)</a></li>
-                <li><a href="/user/auth?hash=1a2d==&amp;p=50/50&amp;q=who?&amp;x=10&amp;y=20&amp;x=30&amp;json">З повторами ключів та "=" в значенні</a></li>
-                <li><a href="/user/auth?hash=1a2d==&amp;p=50/50&amp;q=who?&amp;&amp;x=10&amp;y=20&amp;x=30&amp;json&amp;url=%D0%A3%D0%BD%D1%96%D1%84%D1%96%D0%BA%D0%BE%D0%B2%D0%B0%D0%BD%D0%B8%D0%B9&amp;%D0%BB%D0%BE%D0%BA%D0%B0%D1%82%D0%BE%D1%80=%D1%80%D0%B5%D1%81%D1%83%D1%80%D1%81%D1%96%D0%B2&amp;2+2=4">URL-кодовані параметри та "+"</a></li>
+                <li><a href="/">Без параметрів (/)</a></li>
+                <li><a href="/user/">З сервісом (/user/)</a></li>
+                <li><a href="/user">З сервісом (/user)</a></li>
+                <li><a href="/user/auth">З розділами (/user/auth)</a></li>
+                <li><a href="/user/auth/secret">З розділами (/user/auth/secret)</a></li>
+                <li><a href="/user/%D0%A3%D0%BD%D1%96%D1%84%D1%96%D0%BA%D0%BE%D0%B2%D0%B0%D0%BD%D0%B8%D0%B9&amp;%D0%BB%D0%BE%D0%BA%D0%B0%D1%82%D0%BE%D1%80=%D1%80%D0%B5%D1%81%D1%83%D1%80%D1%81%D1%96%D0%B2&amp;2+2=4">URL-кодовані значення</a></li>
             </ul>
         </section>
 
         <section class="card meta">
             <p>self.path: {self_path_display}</p>
             <p>Шлях: {path_display}</p>
+            <p>Сервіс: {service_display}</p>
+            <p>Розділи: {sections_display}</p>
             <p>Query String: {query_string_display}</p>
             <p>Параметри (словник): {query_params_display}</p>
         </section>
