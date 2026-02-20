@@ -92,48 +92,307 @@ class RequestHandler(BaseHTTPRequestHandler):
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Аналізатор запитів</title>
     <style>
-        p {{
+        :root {{
+            --bg: #09090b;
+            --bg-elevated: #111114;
+            --panel: #121217;
+            --panel-soft: #16161d;
+            --border: #252530;
+            --border-strong: #333346;
+            --text: #f4f4f7;
+            --muted: #9f9fae;
+            --accent: #8b5cf6;
+            --accent-soft: rgba(139, 92, 246, 0.18);
+            --radius: 14px;
+        }}
+
+        * {{
+            box-sizing: border-box;
+        }}
+
+        html,
+        body {{
             margin: 0;
             padding: 0;
+            min-height: 100%;
+        }}
+
+        body {{
+            font-family: "Manrope", "Segoe UI", "Trebuchet MS", sans-serif;
+            color: var(--text);
+            background:
+                radial-gradient(circle at 10% -5%, rgba(139, 92, 246, 0.1), transparent 45%),
+                linear-gradient(180deg, #0a0a0c, var(--bg));
+        }}
+
+        .page {{
+            width: min(1080px, calc(100% - 2rem));
+            margin: 1.1rem auto 1.8rem;
+        }}
+
+        .top {{
+            background: var(--bg-elevated);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 1.1rem 1.25rem 1.2rem;
+        }}
+
+        .top-kicker {{
+            margin: 0;
+            display: inline-block;
+            font-size: 0.73rem;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: #c7b1ff;
+            background: var(--accent-soft);
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            border-radius: 999px;
+            padding: 0.32rem 0.58rem;
+        }}
+
+        .top h1 {{
+            margin: 0.72rem 0 0;
+            font-size: clamp(1.34rem, 2.2vw, 1.92rem);
+            line-height: 1.25;
+            letter-spacing: -0.015em;
+        }}
+
+        .top p {{
+            margin: 0.52rem 0 0;
+            color: var(--muted);
+            line-height: 1.5;
+            max-width: 720px;
+        }}
+
+        .layout {{
+            margin-top: 0.9rem;
+            display: grid;
+            grid-template-columns: 1.15fr 0.85fr;
+            gap: 0.9rem;
+        }}
+
+        .panel {{
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 1rem;
+        }}
+
+        .panel-label {{
+            margin: 0;
+            color: var(--muted);
+            font-size: 0.72rem;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+        }}
+
+        .panel h2 {{
+            margin: 0.45rem 0 0.95rem;
+            font-size: 1.03rem;
+            letter-spacing: -0.01em;
+        }}
+
+        .routes {{
+            margin: 0;
+            padding: 0;
+            list-style: none;
+            display: grid;
+            gap: 0.55rem;
+        }}
+
+        .routes a {{
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 0.7rem;
+            text-decoration: none;
+            color: var(--text);
+            padding: 0.76rem 0.85rem;
+            border-radius: 11px;
+            border: 1px solid var(--border);
+            background: linear-gradient(180deg, rgba(21, 21, 27, 0.88), rgba(16, 16, 21, 0.88));
+            transition: border-color 0.2s ease, background-color 0.2s ease;
+        }}
+
+        .routes a:hover {{
+            border-color: rgba(139, 92, 246, 0.5);
+            background: linear-gradient(180deg, rgba(26, 24, 34, 0.96), rgba(18, 17, 24, 0.96));
+        }}
+
+        .routes span {{
+            font-size: 0.93rem;
+            line-height: 1.3;
+            color: #e3e3eb;
+        }}
+
+        .routes code {{
+            color: #c7b1ff;
+            font-family: "JetBrains Mono", "Cascadia Code", "Consolas", monospace;
+            font-size: 0.79rem;
+            word-break: break-all;
+            text-align: right;
+        }}
+
+        .meta {{
+            margin: 0;
+            padding: 0;
+            list-style: none;
+            display: grid;
+            gap: 0.55rem;
+        }}
+
+        .meta-item {{
+            border: 1px solid var(--border);
+            border-radius: 11px;
+            padding: 0.7rem 0.78rem;
+            background: var(--panel-soft);
+        }}
+
+        .meta-item b {{
+            display: block;
+            margin-bottom: 0.26rem;
+            font-size: 0.71rem;
+            font-weight: 600;
+            color: var(--muted);
+            letter-spacing: 0.09em;
+            text-transform: uppercase;
+        }}
+
+        .meta-item code {{
+            color: var(--text);
+            font-family: "JetBrains Mono", "Cascadia Code", "Consolas", monospace;
+            font-size: 0.8rem;
+            line-height: 1.4;
+            word-break: break-word;
+        }}
+
+        .actions {{
+            margin-top: 0.9rem;
+            display: flex;
+            gap: 0.7rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }}
+
+        .btn {{
+            border: 1px solid rgba(139, 92, 246, 0.42);
+            background: linear-gradient(180deg, #1f1730, #1a1429);
+            color: #ddd1fb;
+            border-radius: 10px;
+            padding: 0.62rem 0.98rem;
+            cursor: pointer;
+            font-weight: 600;
+            letter-spacing: 0.01em;
+            transition: border-color 0.2s ease, color 0.2s ease;
+        }}
+
+        .btn:hover {{
+            border-color: #9a6cff;
+            color: #f2eaff;
+        }}
+
+        .result {{
+            margin: 0;
+            flex: 1 1 320px;
+            min-height: 2.3rem;
+            display: flex;
+            align-items: center;
+            border-radius: 10px;
+            border: 1px solid var(--border-strong);
+            background: #101016;
+            color: #d7cbf6;
+            padding: 0.6rem 0.8rem;
+            font-family: "JetBrains Mono", "Cascadia Code", "Consolas", monospace;
+            font-size: 0.8rem;
+            word-break: break-word;
+        }}
+
+        @media (max-width: 900px) {{
+            .layout {{
+                grid-template-columns: 1fr;
+            }}
+        }}
+
+        @media (max-width: 640px) {{
+            .page {{
+                width: min(1120px, calc(100% - 1rem));
+                margin-top: 0.75rem;
+            }}
+
+            .top,
+            .panel {{
+                padding: 0.86rem;
+            }}
+
+            .routes a {{
+                align-items: flex-start;
+                flex-direction: column;
+            }}
+
+            .routes code {{
+                text-align: left;
+            }}
+
+            .result {{
+                flex-basis: 100%;
+            }}
         }}
     </style>
 </head>
 <body>
-    <div class="wrap">
-        <h1>Аналізатор запитів</h1>
+    <main class="page">
+        <header class="top">
+            <p class="top-kicker">HTTP Router Lab</p>
+            <h1>Аналізатор маршрутів</h1>
+            <p>Строга сторінка для перевірки алгоритму розділення маршруту, секцій та URL-кодованих значень.</p>
+        </header>
 
-        <section class="card">
-            <p class="task-label">Маршрути</p>
-            <h2>Тестові посилання для розділення маршрутів:</h2>
-            <ul>
-                <li><a href="/">Без параметрів (/)</a></li>
-                <li><a href="/user/">З сервісом (/user/)</a></li>
-                <li><a href="/user">З сервісом (/user)</a></li>
-                <li><a href="/user/auth">З розділами (/user/auth)</a></li>
-                <li><a href="/user/auth/secret">З розділами (/user/auth/secret)</a></li>
-                <li><a href="/user/%D0%A3%D0%BD%D1%96%D1%84%D1%96%D0%BA%D0%BE%D0%B2%D0%B0%D0%BD%D0%B8%D0%B9&amp;%D0%BB%D0%BE%D0%BA%D0%B0%D1%82%D0%BE%D1%80=%D1%80%D0%B5%D1%81%D1%83%D1%80%D1%81%D1%96%D0%B2&amp;2+2=4">URL-кодовані значення</a></li>
-            </ul>
+        <section class="layout">
+            <article class="panel">
+                <p class="panel-label">Маршрути</p>
+                <h2>Тестові посилання</h2>
+                <ul class="routes">
+                    <li><a href="/"><span>Без параметрів</span><code>/</code></a></li>
+                    <li><a href="/user/"><span>З сервісом</span><code>/user/</code></a></li>
+                    <li><a href="/user"><span>З сервісом</span><code>/user</code></a></li>
+                    <li><a href="/user/auth"><span>З розділом</span><code>/user/auth</code></a></li>
+                    <li><a href="/user/auth/secret"><span>З розділами</span><code>/user/auth/secret</code></a></li>
+                    <li><a href="/user/%D0%A3%D0%BD%D1%96%D1%84%D1%96%D0%BA%D0%BE%D0%B2%D0%B0%D0%BD%D0%B8%D0%B9&amp;%D0%BB%D0%BE%D0%BA%D0%B0%D1%82%D0%BE%D1%80=%D1%80%D0%B5%D1%81%D1%83%D1%80%D1%81%D1%96%D0%B2&amp;2+2=4"><span>URL-кодовані значення</span><code>/user/%D0%A3%D0%BD%D1%96%D1%84%D1%96%D0%BA%D0%BE%D0%B2%D0%B0%D0%BD%D0%B8%D0%B9&amp;%D0%BB%D0%BE%D0%BA%D0%B0%D1%82%D0%BE%D1%80=%D1%80%D0%B5%D1%81%D1%83%D1%80%D1%81%D1%96%D0%B2&amp;2+2=4</code></a></li>
+                </ul>
+            </article>
+
+            <article class="panel">
+                <p class="panel-label">Дані запиту</p>
+                <h2>Поточний розбір</h2>
+                <ul class="meta">
+                    <li class="meta-item"><b>self.path</b><code>{self_path_display}</code></li>
+                    <li class="meta-item"><b>Шлях</b><code>{path_display}</code></li>
+                    <li class="meta-item"><b>Сервіс</b><code>{service_display}</code></li>
+                    <li class="meta-item"><b>Розділи</b><code>{sections_display}</code></li>
+                    <li class="meta-item"><b>Query String</b><code>{query_string_display}</code></li>
+                    <li class="meta-item"><b>Параметри</b><code>{query_params_display}</code></li>
+                </ul>
+            </article>
         </section>
 
-        <section class="card meta">
-            <p>self.path: {self_path_display}</p>
-            <p>Шлях: {path_display}</p>
-            <p>Сервіс: {service_display}</p>
-            <p>Розділи: {sections_display}</p>
-            <p>Query String: {query_string_display}</p>
-            <p>Параметри (словник): {query_params_display}</p>
+        <section class="actions">
+            <button class="btn" onclick="linkClick()">Надіслати LINK</button>
+            <output id="out" class="result">Очікування відповіді...</output>
         </section>
-
-        <button class="btn" onclick="linkClick()">LINK</button>
-        <p id="out"></p>
-    </div>
+    </main>
 
     <script>
         function linkClick() {{
+            const out = document.getElementById('out');
+            out.textContent = 'Надсилаємо LINK...';
+
             fetch('/', {{ method: 'LINK' }})
                 .then(response => response.text())
                 .then(text => {{
-                    document.getElementById('out').textContent = text;
+                    out.textContent = text;
+                }})
+                .catch(error => {{
+                    out.textContent = 'Помилка LINK: ' + error;
                 }});
         }}
     </script>
