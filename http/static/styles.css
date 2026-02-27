@@ -172,6 +172,77 @@ body {
     word-break: break-word;
 }
 
+.api-lab {
+    margin-top: 0.9rem;
+}
+
+.api-controls {
+    display: grid;
+    gap: 0.64rem;
+    margin-bottom: 0.8rem;
+}
+
+.control-row {
+    display: flex;
+    gap: 0.55rem;
+    align-items: flex-end;
+    flex-wrap: wrap;
+}
+
+.field {
+    display: grid;
+    gap: 0.28rem;
+    min-width: 120px;
+}
+
+.field span {
+    color: var(--muted);
+    font-size: 0.73rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.field input {
+    border: 1px solid var(--border-strong);
+    border-radius: 10px;
+    background: #101016;
+    color: #f3efff;
+    padding: 0.52rem 0.64rem;
+    font-size: 0.9rem;
+    outline: none;
+}
+
+.field input:focus {
+    border-color: #9a6cff;
+    box-shadow: 0 0 0 2px rgba(154, 108, 255, 0.18);
+}
+
+.field-id {
+    min-width: 140px;
+}
+
+.api-meta {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.55rem;
+    margin-bottom: 0.64rem;
+}
+
+.json-view {
+    margin: 0;
+    border: 1px solid var(--border-strong);
+    border-radius: 11px;
+    background: #101016;
+    padding: 0.74rem 0.8rem;
+    min-height: 220px;
+    max-height: 420px;
+    overflow: auto;
+    color: #ddd1fb;
+    font-family: "JetBrains Mono", "Cascadia Code", "Consolas", monospace;
+    font-size: 0.79rem;
+    line-height: 1.45;
+}
+
 .actions {
     margin-top: 0.9rem;
     display: flex;
@@ -189,12 +260,26 @@ body {
     cursor: pointer;
     font-weight: 600;
     letter-spacing: 0.01em;
-    transition: border-color 0.2s ease, color 0.2s ease;
+    transition: border-color 0.2s ease, color 0.2s ease, opacity 0.2s ease;
+    text-decoration: none;
+    font-size: 0.86rem;
 }
 
 .btn:hover {
     border-color: #9a6cff;
     color: #f2eaff;
+}
+
+.btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+    border-color: var(--border-strong);
+    color: var(--muted);
+}
+
+.btn-link {
+    display: inline-flex;
+    align-items: center;
 }
 
 .result {
@@ -217,6 +302,10 @@ body {
     .layout {
         grid-template-columns: 1fr;
     }
+
+    .api-meta {
+        grid-template-columns: 1fr;
+    }
 }
 
 @media (max-width: 640px) {
@@ -237,6 +326,20 @@ body {
 
     .routes code {
         text-align: left;
+    }
+
+    .control-row {
+        align-items: stretch;
+    }
+
+    .field {
+        min-width: 100%;
+    }
+
+    .btn,
+    .btn-link {
+        width: 100%;
+        justify-content: center;
     }
 
     .result {

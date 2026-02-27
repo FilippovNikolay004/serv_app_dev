@@ -1,5 +1,7 @@
 ﻿from http.server import HTTPServer, BaseHTTPRequestHandler
 import html
+import json
+import math
 from pathlib import Path
 import socket
 from string import Template
@@ -9,6 +11,24 @@ import urllib.parse
 BASE_DIR = Path(__file__).resolve().parent
 TEMPLATE_PATH = BASE_DIR / 'templates' / 'index.html'
 STYLES_PATH = BASE_DIR / 'static' / 'styles.css'
+DEFAULT_PER_PAGE = 5
+MAX_PER_PAGE = 25
+
+# In-memory resource for demonstrating REST collection/item endpoints.
+USERS = [
+    {'id': 1, 'name': 'Alice', 'email': 'alice@example.com'},
+    {'id': 2, 'name': 'Bob', 'email': 'bob@example.com'},
+    {'id': 3, 'name': 'Carol', 'email': 'carol@example.com'},
+    {'id': 4, 'name': 'Dave', 'email': 'dave@example.com'},
+    {'id': 5, 'name': 'Eve', 'email': 'eve@example.com'},
+    {'id': 6, 'name': 'Frank', 'email': 'frank@example.com'},
+    {'id': 7, 'name': 'Grace', 'email': 'grace@example.com'},
+    {'id': 8, 'name': 'Heidi', 'email': 'heidi@example.com'},
+    {'id': 9, 'name': 'Ivan', 'email': 'ivan@example.com'},
+    {'id': 10, 'name': 'Judy', 'email': 'judy@example.com'},
+    {'id': 11, 'name': 'Karl', 'email': 'karl@example.com'},
+    {'id': 12, 'name': 'Liam', 'email': 'liam@example.com'},
+]
 
 
 def render_index_html(context: dict[str, str]) -> str:
@@ -58,6 +78,56 @@ def split_route_path(path: str) -> tuple[str | None, list[str]]:
     return parts[0], parts[1:]
 
 
+def get_query_param(query_params: dict[str, str | None | list[str | None]], key: str) -> str | None:
+    value = query_params.get(key)
+    if isinstance(value, list):
+        return value[0]
+    return value
+
+
+def parse_int_param(value: str | None, name: str, default: int, *, minimum: int, maximum: int) -> int:
+    if value is None:
+        return default
+
+    try:
+        parsed = int(value)
+    except ValueError as ex:
+        raise ValueError(f'"{name}" must be an integer') from ex
+
+    if parsed < minimum:
+        raise ValueError(f'"{name}" must be >= {minimum}')
+    if parsed > maximum:
+        raise ValueError(f'"{name}" must be <= {maximum}')
+
+    return parsed
+
+
+def build_page_link(
+    path: str,
+    query_params: dict[str, str | None | list[str | None]],
+    page: int,
+    per_page: int,
+) -> str:
+    clean_params: dict[str, str | list[str]] = {}
+
+    for key, value in query_params.items():
+        if key in ('page', 'per_page'):
+            continue
+
+        if isinstance(value, list):
+            clean_list = [item for item in value if item is not None]
+            if len(clean_list) > 0:
+                clean_params[key] = clean_list
+        elif value is not None:
+            clean_params[key] = value
+
+    clean_params['page'] = str(page)
+    clean_params['per_page'] = str(per_page)
+
+    encoded = urllib.parse.urlencode(clean_params, doseq=True)
+    return f'{path}?{encoded}'
+
+
 class RequestHandler(BaseHTTPRequestHandler):
     def safe_write(self, payload: bytes) -> None:
         """Write response body and ignore client-side disconnects."""
@@ -78,6 +148,128 @@ class RequestHandler(BaseHTTPRequestHandler):
         self.send_header('Content-Type', content_type)
         self.end_headers()
         self.safe_write(payload)
+
+    def send_json(self, status_code: int, payload: dict | list) -> None:
+        body = json.dumps(payload, ensure_ascii=False).encode('utf-8')
+
+        self.send_response(status_code)
+        self.send_header('Content-Type', 'application/json; charset=utf-8')
+        self.send_header('Content-Length', str(len(body)))
+        self.end_headers()
+        self.safe_write(body)
+
+    def send_error_json(self, status_code: int, message: str) -> None:
+        self.send_json(status_code, {'error': {'status': status_code, 'message': message}})
+
+    def handle_users_collection(
+        self,
+        path: str,
+        query_params: dict[str, str | None | list[str | None]],
+    ) -> None:
+        try:
+            page = parse_int_param(
+                get_query_param(query_params, 'page'),
+                'page',
+                1,
+                minimum=1,
+                maximum=1000000,
+            )
+            per_page = parse_int_param(
+                get_query_param(query_params, 'per_page'),
+                'per_page',
+                DEFAULT_PER_PAGE,
+                minimum=1,
+                maximum=MAX_PER_PAGE,
+            )
+        except ValueError as ex:
+            self.send_error_json(400, str(ex))
+            return
+
+        total_items = len(USERS)
+        total_pages = math.ceil(total_items / per_page) if total_items > 0 else 0
+
+        if total_pages == 0:
+            if page != 1:
+                self.send_error_json(400, '"page" is out of range. Allowed value: 1')
+                return
+        elif page > total_pages:
+            self.send_error_json(400, f'"page" is out of range. Allowed values: 1..{total_pages}')
+            return
+
+        offset = (page - 1) * per_page
+        data = USERS[offset:offset + per_page]
+
+        has_prev = page > 1
+        has_next = total_pages > 0 and page < total_pages
+        links = {
+            'self': build_page_link(path, query_params, page, per_page),
+            'first': build_page_link(path, query_params, 1, per_page),
+            'last': build_page_link(path, query_params, max(total_pages, 1), per_page),
+            'prev': build_page_link(path, query_params, page - 1, per_page) if has_prev else None,
+            'next': build_page_link(path, query_params, page + 1, per_page) if has_next else None,
+        }
+
+        payload = {
+            'data': data,
+            'meta': {
+                'count': len(data),
+                'total_items': total_items,
+                'pagination': {
+                    'page': page,
+                    'per_page': per_page,
+                    'total_pages': total_pages,
+                    'has_prev': has_prev,
+                    'has_next': has_next,
+                },
+            },
+            'links': links,
+        }
+        self.send_json(200, payload)
+
+    def handle_users_item(self, user_id_raw: str) -> None:
+        try:
+            user_id = int(user_id_raw)
+        except ValueError:
+            self.send_error_json(400, '"id" must be an integer')
+            return
+
+        user = next((item for item in USERS if item['id'] == user_id), None)
+        if user is None:
+            self.send_error_json(404, f'User with id={user_id} not found')
+            return
+
+        self.send_json(200, {'data': user})
+
+    def handle_api_get(self, path: str, query_params: dict[str, str | None | list[str | None]]) -> None:
+        service, sections = split_route_path(path)
+        if service != 'api':
+            self.send_error_json(404, 'Resource not found')
+            return
+
+        if len(sections) == 0:
+            self.send_json(
+                200,
+                {
+                    'data': [{'resource': 'users', 'href': '/api/users'}],
+                    'meta': {'count': 1},
+                },
+            )
+            return
+
+        resource = sections[0]
+        if resource != 'users':
+            self.send_error_json(404, f'Resource "{resource}" not found')
+            return
+
+        if len(sections) == 1:
+            self.handle_users_collection(path, query_params)
+            return
+
+        if len(sections) == 2:
+            self.handle_users_item(sections[1])
+            return
+
+        self.send_error_json(404, 'Resource not found')
 
     def do_GET(self):
         print(self.path)
@@ -101,6 +293,11 @@ class RequestHandler(BaseHTTPRequestHandler):
             return
 
         query_params = parse_query_string(query_string)
+
+        if path == '/api' or path.startswith('/api/'):
+            self.handle_api_get(path, query_params)
+            return
+
         service, sections = split_route_path(path)
 
         page_html = render_index_html(
