@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="uk">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Аналізатор запитів</title>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+    <main class="page">
+        <header class="top">
+            <p class="top-kicker">HTTP Router Lab</p>
+            <h1>Аналізатор маршрутів</h1>
+            <p>Строга сторінка для перевірки алгоритму розділення маршруту, секцій та URL-кодованих значень.</p>
+        </header>
+
+        <section class="layout">
+            <article class="panel">
+                <p class="panel-label">Маршрути</p>
+                <h2>Тестові посилання</h2>
+                <ul class="routes">
+                    <li><a href="/"><span>Без параметрів</span><code>/</code></a></li>
+                    <li><a href="/user/"><span>З сервісом</span><code>/user/</code></a></li>
+                    <li><a href="/user"><span>З сервісом</span><code>/user</code></a></li>
+                    <li><a href="/user/auth"><span>З розділом</span><code>/user/auth</code></a></li>
+                    <li><a href="/user/auth/secret"><span>З розділами</span><code>/user/auth/secret</code></a></li>
+                    <li><a href="/user/%D0%A3%D0%BD%D1%96%D1%84%D1%96%D0%BA%D0%BE%D0%B2%D0%B0%D0%BD%D0%B8%D0%B9&amp;%D0%BB%D0%BE%D0%BA%D0%B0%D1%82%D0%BE%D1%80=%D1%80%D0%B5%D1%81%D1%83%D1%80%D1%81%D1%96%D0%B2&amp;2+2=4"><span>URL-кодовані значення</span><code>/user/%D0%A3%D0%BD%D1%96%D1%84%D1%96%D0%BA%D0%BE%D0%B2%D0%B0%D0%BD%D0%B8%D0%B9&amp;%D0%BB%D0%BE%D0%BA%D0%B0%D1%82%D0%BE%D1%80=%D1%80%D0%B5%D1%81%D1%83%D1%80%D1%81%D1%96%D0%B2&amp;2+2=4</code></a></li>
+                </ul>
+            </article>
+
+            <article class="panel">
+                <p class="panel-label">Дані запиту</p>
+                <h2>Поточний розбір</h2>
+                <ul class="meta">
+                    <li class="meta-item"><b>self.path</b><code>$self_path_display</code></li>
+                    <li class="meta-item"><b>Шлях</b><code>$path_display</code></li>
+                    <li class="meta-item"><b>Сервіс</b><code>$service_display</code></li>
+                    <li class="meta-item"><b>Розділи</b><code>$sections_display</code></li>
+                    <li class="meta-item"><b>Query String</b><code>$query_string_display</code></li>
+                    <li class="meta-item"><b>Параметри</b><code>$query_params_display</code></li>
+                </ul>
+            </article>
+        </section>
+
+        <section class="actions">
+            <button class="btn" onclick="linkClick()">Надіслати LINK</button>
+            <output id="out" class="result">Очікування відповіді...</output>
+        </section>
+    </main>
+
+    <script>
+        function linkClick() {
+            const out = document.getElementById('out');
+            out.textContent = 'Надсилаємо LINK...';
+
+            fetch('/', { method: 'LINK' })
+                .then(response => response.text())
+                .then(text => {
+                    out.textContent = text;
+                })
+                .catch(error => {
+                    out.textContent = 'Помилка LINK: ' + error;
+                });
+        }
+    </script>
+</body>
+</html>
